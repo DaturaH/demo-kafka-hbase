@@ -63,8 +63,8 @@ public final class JavaKafkaWordCount {
 //      System.err.println("Usage: JavaKafkaWordCount <zkQuorum> <group> <topics> <numThreads>");
 //      System.exit(1);
 //    }
-	 String [] args1 = {"zoo01,zoo02,zoo03" , "my-consumer-group" , "topic1,topic2" , "1"};
-    SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount").setMaster("local[1]");
+	 String [] args1 = {"localhost:2181" , "my-consumer-group" , "top1,top2" , "2"};
+    SparkConf sparkConf = new SparkConf().setAppName("JavaKafkaWordCount").setMaster("local[2]");
     // Create the context with 2 seconds batch size
     JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
 
@@ -73,6 +73,7 @@ public final class JavaKafkaWordCount {
     String[] topics = args1[2].split(",");
     for (String topic: topics) {
       topicMap.put(topic, numThreads);
+      System.out.println("htq" + topic);
     }
 
     JavaPairReceiverInputDStream<String, String> messages =

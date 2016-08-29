@@ -1,9 +1,11 @@
-package hbasetest;
+package kafka_sparkstreaming_hbase_hzhutianqi;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
- 
+import java.util.Map.Entry;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -26,6 +28,8 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.util.Bytes;
+
+import kafka_sparkstreaming_hbase_hzhutianqi.CounterMap.Counter;
  
 /**
  * 
@@ -40,92 +44,101 @@ public class HBaseManagerMain {
     //     Caused by: java.lang.NoClassDefFoundError: io/netty/channel/ChannelHandler
     // 需要把单独的htrace-core-3.1.0-incubating.jar和netty-all-4.0.5.final.jar导入项目中
        
-    private static final String TABLE_NAME = "hbase_test";
     private static final String COLUMN_FAMILY_NAME = "cf";
-       
+     
+    Connection connection = null;
+    Admin admin = null;
     /**
      * @param args
      */
-    
-    public static void main(String[] args) {
-        Configuration config = HBaseConfiguration.create();
-        config.set("hbase.zookeeper.quorum", "10.240.84.15");
-        config.set("hbase.zookeeper.property.clientPort", "2182");
-        Connection connection = null;
-        Admin admin = null;
-    
-        HBaseManagerMain manageMain = new HBaseManagerMain();
-
-        try {
-            /**
-             * HTable类读写时是非线程安全的，已经标记为Deprecated
-             * 建议通过org.apache.hadoop.hbase.client.Connection来获取实例
-             */     	
-            connection = ConnectionFactory.createConnection(config);
-            admin = connection.getAdmin();
-            
-            /**
-             *  列出所有的表
-             */
-            manageMain.listTables(admin);
-            /**
-             * 判断表m_domain是否存在
-             */
-            boolean exists = manageMain.isExists(admin);
-             
-            /**
-             * 存在就删除
-             */
-            if (exists) {
-                manageMain.deleteTable(admin);
-            } 
-             
-            /**
-             * 创建表
-             */
-            manageMain.createTable(admin);
-             
-            /**
-             *  再次列出所有的表
-             */
-            manageMain.listTables(admin);
-             
-            /**
-             * 添加数据
-             */
-            manageMain.putDatas(connection);
-             
-            /**
-             * 检索数据-表扫描
-             */
-            manageMain.scanTable(connection);
-             
-            /**
-             * 检索数据-单行读
-             */
-            manageMain.getData(connection);
-             
-            /**
-             * 检索数据-根据条件
-             */
-            manageMain.queryByFilter(connection);
-             
-            /**
-             * 删除数据
-             */
-            manageMain.deleteDatas(connection);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-         
+    public HBaseManagerMain(Connection connection , Admin admin){
+    	this.connection = connection;
+    	this.admin = admin;
     }
- 
+    
+    
+    
+//    
+//    
+//    public static void main(String[] args) {
+//        Configuration config = HBaseConfiguration.create();
+//        config.set("hbase.zookeeper.quorum", "10.240.84.15");
+//        config.set("hbase.zookeeper.property.clientPort", "2182");
+//        Connection connection = null;
+//        Admin admin = null;
+//    
+//        HBaseManagerMain manageMain = new HBaseManagerMain();
+//
+//        try {
+//            /**
+//             * HTable类读写时是非线程安全的，已经标记为Deprecated
+//             * 建议通过org.apache.hadoop.hbase.client.Connection来获取实例
+//             */     	
+//            connection = ConnectionFactory.createConnection(config);
+//            admin = connection.getAdmin();
+//            
+//            /**
+//             *  列出所有的表
+//             */
+////            manageMain.listTables();
+////            /**
+////             * 判断表m_domain是否存在
+////             */
+////            boolean exists = manageMain.isExists();
+////             
+////            /**
+////             * 存在就删除
+////             */
+////            if (exists) {
+////               manageMain.deleteTable(admin);
+////            } 
+////             
+////            /**
+////             * 创建表
+////             */
+////            manageMain.createTable();
+//             
+////            /**
+////             *  再次列出所有的表
+////             */
+////            manageMain.listTables();
+////             
+////            /**
+////             * 添加数据
+////             */
+////            manageMain.putDatas(connection);
+////             
+//            /**
+//             * 检索数据-表扫描
+//             */
+//            manageMain.scanTable(connection);
+//             
+//            /**
+//             * 检索数据-单行读
+//             */
+//            manageMain.getData(connection);
+//             
+//            /**
+//             * 检索数据-根据条件
+//             */
+//            manageMain.queryByFilter(connection);
+//             
+//            /**
+//             * 删除数据
+//             */
+//            manageMain.deleteDatas(connection);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//         
+//    }
+// 
     /**
      * 列出表
      * @param admin
      * @throws IOException 
      */
-    private void listTables (Admin admin) throws IOException {
+    public void listTables () throws IOException {
         TableName [] names = admin.listTableNames();
         for (TableName tableName : names) {
  //           LOG.info("Table Name is : " + tableName.getNameAsString());
@@ -139,7 +152,7 @@ public class HBaseManagerMain {
      * @return
      * @throws IOException
      */
-    private boolean isExists (Admin admin) throws IOException {
+    public boolean isExists (String tablename) throws IOException {
         /**
          * org.apache.hadoop.hbase.TableName为为代表了表名字的Immutable POJO class对象,
          * 形式为<table namespace>:<table qualifier>。
@@ -154,8 +167,9 @@ public class HBaseManagerMain {
          * 在HBase中，namespace命名空间指对一组表的逻辑分组，类似RDBMS中的database，方便对表在业务上划分。
          * 
         */ 
-        TableName tableName = TableName.valueOf(TABLE_NAME);
+ //       TableName tableName = TableName.valueOf(TABLE_NAME);
          
+    	TableName tableName = TableName.valueOf(tablename);
         boolean exists = admin.tableExists(tableName);
         if (exists) {
  //           LOG.info("Table " + tableName.getNameAsString() + " already exists.");
@@ -172,9 +186,10 @@ public class HBaseManagerMain {
      * @param admin
      * @throws IOException
      */
-    private void createTable (Admin admin) throws IOException {
-        TableName tableName = TableName.valueOf(TABLE_NAME);
-        LOG.info("To create table named " + TABLE_NAME);
+    public  void createTable (String tablename) throws IOException {
+        TableName tableName = TableName.valueOf( tablename);
+        LOG.info("To create table named " +  tablename);
+        System.out.println("To create table named " +  tablename);
         HTableDescriptor tableDesc = new HTableDescriptor(tableName);
         HColumnDescriptor columnDesc = new HColumnDescriptor(COLUMN_FAMILY_NAME);
         tableDesc.addFamily(columnDesc);
@@ -196,9 +211,10 @@ public class HBaseManagerMain {
      * @param admin
      * @throws IOException
      */
-    private void deleteTable (Admin admin) throws IOException {
-        TableName tableName = TableName.valueOf(TABLE_NAME);
-        LOG.info("disable and then delete table named " + TABLE_NAME);
+    public void deleteTable (String tablename) throws IOException {
+    	TableName tableName = TableName.valueOf(tablename);
+ //   	LOG.info("disable and then delete table named " + tablename);
+    	System.out.println("disable and then delete table named " + tablename);
         admin.disableTable(tableName);
         admin.deleteTable(tableName);
     }
@@ -208,51 +224,30 @@ public class HBaseManagerMain {
      * @param connection
      * @throws IOException
      */
-    private void putDatas (Connection connection) throws IOException {
-        String [] rows = {"baidu.com_19991011_20151011", "alibaba.com_19990415_20220523"};
-        String [] columns = {"owner", "ipstr", "access_server", "reg_date", "exp_date"};
-        String [][] values = {
-            {"Beijing Baidu Technology Co.", "220.181.57.217", "北京", "1999年10月11日", "2015年10月11日"}, 
-            {"Hangzhou Alibaba Advertising Co.", "205.204.101.42", "杭州", "1999年04月15日", "2022年05月23日"}
-        };
-        TableName tableName = TableName.valueOf(TABLE_NAME);
-        byte [] family = Bytes.toBytes(COLUMN_FAMILY_NAME);
-        Table table = connection.getTable(tableName);
-        for (int i = 0; i < rows.length; i++) {
-            System.out.println("========================" + rows[i]);
-            byte [] rowkey = Bytes.toBytes(rows[i]);
-            Put put = new Put(rowkey);
-            for (int j = 0; j < columns.length; j++) {
-                byte [] qualifier = Bytes.toBytes(columns[j]);
-                byte [] value = Bytes.toBytes(values[i][j]);
-                put.addColumn(family, qualifier, value);
-            }
-            table.put(put);
-        }
-        table.close();
-    }
-    
-    private void putDatas (Connection connection , String data) throws IOException {
-        String [] rows = {"baidu.com_19991011_20151011", "alibaba.com_19990415_20220523"};
-        String [] columns = {"owner", "ipstr", "access_server", "reg_date", "exp_date"};
-        String [][] values = {
-            {"Beijing Baidu Technology Co.", "220.181.57.217", "北京", "1999年10月11日", "2015年10月11日"}, 
-            {"Hangzhou Alibaba Advertising Co.", "205.204.101.42", "杭州", "1999年04月15日", "2022年05月23日"}
-        };
-        TableName tableName = TableName.valueOf(TABLE_NAME);
-        byte [] family = Bytes.toBytes(COLUMN_FAMILY_NAME);
-        Table table = connection.getTable(tableName);
-        for (int i = 0; i < rows.length; i++) {
-            System.out.println("========================" + rows[i]);
-            byte [] rowkey = Bytes.toBytes(rows[i]);
-            Put put = new Put(rowkey);
-            for (int j = 0; j < columns.length; j++) {
-                byte [] qualifier = Bytes.toBytes(columns[j]);
-                byte [] value = Bytes.toBytes(values[i][j]);
-                put.addColumn(family, qualifier, value);
-            }
-            table.put(put);
-        }
+    public void putDatas (String tableName , String columnFamily , HashMap<String , CounterMap> rowKeyCounterMap ) throws IOException {
+    	TableName tablename = TableName.valueOf(tableName);
+		byte[] family = Bytes.toBytes(columnFamily);
+		Table table = connection.getTable(tablename);
+		
+		for (Entry<String, CounterMap> entry : rowKeyCounterMap.entrySet()) {  
+	          CounterMap pastCounterMap = entry.getValue();  
+	          rowKeyCounterMap.put(entry.getKey(), new CounterMap());  	
+	          
+	          byte[] rowkey = Bytes.toBytes(entry.getKey());
+	          Put put = new Put(rowkey);
+	        		          
+	          boolean hasColumns = false;  
+	          for (Entry<String, Counter> entry2 : pastCounterMap.entrySet()) {  			        	  
+	        	  byte [] qualifier = Bytes.toBytes(entry2.getKey());
+	        	  byte[] value = Bytes.toBytes(Long.toString(entry2.getValue().value));
+	        	  put.addColumn(family , qualifier , value);		
+	        	  
+	            hasColumns = true;  
+	          }  
+	          if (hasColumns) {  
+		         table.put(put);
+	          }  
+	        }  
         table.close();
     }
      
@@ -261,13 +256,13 @@ public class HBaseManagerMain {
      * @param connection
      * @throws IOException 
      */
-    private void getData(Connection connection) throws IOException {
+    public void getData(String tableName) throws IOException {
 //        LOG.info("Get data from table " + TABLE_NAME + " by family.");
-        System.out.println("Get data from table " + TABLE_NAME + " by family.");
-        TableName tableName = TableName.valueOf(TABLE_NAME);
+        System.out.println("Get data from table " + tableName + " by family.");
+        TableName tablename = TableName.valueOf(tableName);
         byte [] family = Bytes.toBytes(COLUMN_FAMILY_NAME);
-        byte [] row = Bytes.toBytes("baidu.com_19991011_20151011");
-        Table table = connection.getTable(tableName);
+        byte [] row = Bytes.toBytes("Counter");
+        Table table = connection.getTable(tablename);
          
         Get get = new Get(row);
         get.addFamily(family);
@@ -290,16 +285,16 @@ public class HBaseManagerMain {
      * @param connection
      * @throws IOException 
      */
-    private void scanTable(Connection connection) throws IOException {
+    public void scanTable(String tableName) throws IOException {
  //       LOG.info("Scan table " + TABLE_NAME + " to browse all datas.");
-        System.out.println("Scan table " + TABLE_NAME + " to browse all datas.");
-        TableName tableName = TableName.valueOf(TABLE_NAME);
+        System.out.println("Scan table " + tableName + " to browse all datas.");
+        TableName tablename = TableName.valueOf(tableName);
         byte [] family = Bytes.toBytes(COLUMN_FAMILY_NAME);
          
         Scan scan = new Scan();
         scan.addFamily(family);
          
-        Table table = connection.getTable(tableName);
+        Table table = connection.getTable(tablename);
         ResultScanner resultScanner = table.getScanner(scan);
         for (Iterator<Result> it = resultScanner.iterator(); it.hasNext(); ) {
             Result result = it.next();
@@ -336,25 +331,25 @@ public class HBaseManagerMain {
      * @param connection
      * @throws IOException 
      */
-    private void deleteDatas(Connection connection) throws IOException {
- //       LOG.info("delete data from table " + TABLE_NAME + " .");
-        System.out.println("delete data from table " + TABLE_NAME + " .");
-        TableName tableName = TableName.valueOf(TABLE_NAME);
-        byte [] family = Bytes.toBytes(COLUMN_FAMILY_NAME);
-        byte [] row = Bytes.toBytes("baidu.com_19991011_20151011");
-        Delete delete = new Delete(row);
-         
-        // @deprecated Since hbase-1.0.0. Use {@link #addColumn(byte[], byte[])}
-        // delete.deleteColumn(family, qualifier);            // 删除某个列的某个版本
-        delete.addColumn(family, Bytes.toBytes("owner"));
-         
-        // @deprecated Since hbase-1.0.0. Use {@link #addColumns(byte[], byte[])}
-        // delete.deleteColumns(family, qualifier)            // 删除某个列的所有版本
-         
-        // @deprecated Since 1.0.0. Use {@link #(byte[])}
-        // delete.addFamily(family);                           // 删除某个列族
-         
-        Table table = connection.getTable(tableName);
-        table.delete(delete);
-    }
+//    private void deleteDatas(Connection connection) throws IOException {
+// //       LOG.info("delete data from table " + TABLE_NAME + " .");
+//        System.out.println("delete data from table " + TABLE_NAME + " .");
+//        TableName tableName = TableName.valueOf(TABLE_NAME);
+//        byte [] family = Bytes.toBytes(COLUMN_FAMILY_NAME);
+//        byte [] row = Bytes.toBytes("baidu.com_19991011_20151011");
+//        Delete delete = new Delete(row);
+//         
+//        // @deprecated Since hbase-1.0.0. Use {@link #addColumn(byte[], byte[])}
+//        // delete.deleteColumn(family, qualifier);            // 删除某个列的某个版本
+//        delete.addColumn(family, Bytes.toBytes("owner"));
+//         
+//        // @deprecated Since hbase-1.0.0. Use {@link #addColumns(byte[], byte[])}
+//        // delete.deleteColumns(family, qualifier)            // 删除某个列的所有版本
+//         
+//        // @deprecated Since 1.0.0. Use {@link #(byte[])}
+//        // delete.addFamily(family);                           // 删除某个列族
+//         
+//        Table table = connection.getTable(tableName);
+//        table.delete(delete);
+//    }
 }

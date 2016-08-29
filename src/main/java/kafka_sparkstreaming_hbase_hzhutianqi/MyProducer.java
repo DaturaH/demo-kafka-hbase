@@ -1,4 +1,4 @@
-package kafkaWordCount;
+package kafka_sparkstreaming_hbase_hzhutianqi;
 
 import java.util.Properties; 
 

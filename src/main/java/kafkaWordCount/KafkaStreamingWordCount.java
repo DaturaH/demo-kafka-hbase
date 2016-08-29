@@ -1,5 +1,6 @@
 package kafkaWordCount;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -12,10 +13,16 @@ import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.KafkaUtils;
-
 import scala.Tuple2;
-
 import com.google.common.collect.Lists;
+
+import kafka_sparkstreaming_hbase.HBaseManagerMain;
+
+/*
+ * http://www.cnblogs.com/gaopeng527/p/4959633.html
+*/
+
+
 public class KafkaStreamingWordCount {
 
     public static void main(String[] args) {
@@ -65,6 +72,32 @@ public class KafkaStreamingWordCount {
         jssc.start();
         jssc.awaitTermination();
 
+        
+        
+        
+        HBaseManagerMain hbaseManagerMain = new HBaseManagerMain();
+        try {
+        	//list all the tables in hbase
+			hbaseManagerMain.listTables();
+			String tableName = "test1";
+			//judge whether table exists or not
+			boolean exists = hbaseManagerMain.isExists(tableName);
+			//delete the table if exists
+			if (exists) {
+				hbaseManagerMain.deleteTable(tableName);
+			} 
+			//create the table
+			hbaseManagerMain.createTable(tableName);
+			//list all the table again
+			hbaseManagerMain.listTables();
+			//add  data 
+	//		hbaseManagerMain.putDatas(tableName, columns, values);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
+        
     }
 
 }

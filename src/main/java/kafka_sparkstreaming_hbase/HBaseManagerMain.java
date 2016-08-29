@@ -1,4 +1,4 @@
-package hbasetest;
+package kafka_sparkstreaming_hbase;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -42,10 +42,27 @@ public class HBaseManagerMain {
        
     private static final String TABLE_NAME = "hbase_test";
     private static final String COLUMN_FAMILY_NAME = "cf";
-       
+     
+	Configuration config = HBaseConfiguration.create();
+    Connection connection = null;
+    Admin admin = null;
     /**
      * @param args
      */
+    public void HBaseManagerMain(){
+        config.set("hbase.zookeeper.quorum", "10.240.84.15");
+        config.set("hbase.zookeeper.property.clientPort", "2182");
+        try{
+        	connection = ConnectionFactory.createConnection(config);
+        	admin = connection.getAdmin();
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+    
+    
+    
+    
     
     public static void main(String[] args) {
         Configuration config = HBaseConfiguration.create();
@@ -67,34 +84,34 @@ public class HBaseManagerMain {
             /**
              *  列出所有的表
              */
-            manageMain.listTables(admin);
-            /**
-             * 判断表m_domain是否存在
-             */
-            boolean exists = manageMain.isExists(admin);
+//            manageMain.listTables();
+//            /**
+//             * 判断表m_domain是否存在
+//             */
+//            boolean exists = manageMain.isExists();
+//             
+//            /**
+//             * 存在就删除
+//             */
+//            if (exists) {
+//               manageMain.deleteTable(admin);
+//            } 
+//             
+//            /**
+//             * 创建表
+//             */
+//            manageMain.createTable();
              
-            /**
-             * 存在就删除
-             */
-            if (exists) {
-                manageMain.deleteTable(admin);
-            } 
-             
-            /**
-             * 创建表
-             */
-            manageMain.createTable(admin);
-             
-            /**
-             *  再次列出所有的表
-             */
-            manageMain.listTables(admin);
-             
-            /**
-             * 添加数据
-             */
-            manageMain.putDatas(connection);
-             
+//            /**
+//             *  再次列出所有的表
+//             */
+//            manageMain.listTables();
+//             
+//            /**
+//             * 添加数据
+//             */
+//            manageMain.putDatas(connection);
+//             
             /**
              * 检索数据-表扫描
              */
@@ -125,7 +142,7 @@ public class HBaseManagerMain {
      * @param admin
      * @throws IOException 
      */
-    private void listTables (Admin admin) throws IOException {
+    public void listTables () throws IOException {
         TableName [] names = admin.listTableNames();
         for (TableName tableName : names) {
  //           LOG.info("Table Name is : " + tableName.getNameAsString());
@@ -139,7 +156,7 @@ public class HBaseManagerMain {
      * @return
      * @throws IOException
      */
-    private boolean isExists (Admin admin) throws IOException {
+    public boolean isExists (String tablename) throws IOException {
         /**
          * org.apache.hadoop.hbase.TableName为为代表了表名字的Immutable POJO class对象,
          * 形式为<table namespace>:<table qualifier>。
@@ -154,8 +171,9 @@ public class HBaseManagerMain {
          * 在HBase中，namespace命名空间指对一组表的逻辑分组，类似RDBMS中的database，方便对表在业务上划分。
          * 
         */ 
-        TableName tableName = TableName.valueOf(TABLE_NAME);
+ //       TableName tableName = TableName.valueOf(TABLE_NAME);
          
+    	TableName tableName = TableName.valueOf(tablename);
         boolean exists = admin.tableExists(tableName);
         if (exists) {
  //           LOG.info("Table " + tableName.getNameAsString() + " already exists.");
@@ -172,9 +190,10 @@ public class HBaseManagerMain {
      * @param admin
      * @throws IOException
      */
-    private void createTable (Admin admin) throws IOException {
-        TableName tableName = TableName.valueOf(TABLE_NAME);
-        LOG.info("To create table named " + TABLE_NAME);
+    public  void createTable (String tablename) throws IOException {
+        TableName tableName = TableName.valueOf( tablename);
+        LOG.info("To create table named " +  tablename);
+        System.out.println("To create table named " +  tablename);
         HTableDescriptor tableDesc = new HTableDescriptor(tableName);
         HColumnDescriptor columnDesc = new HColumnDescriptor(COLUMN_FAMILY_NAME);
         tableDesc.addFamily(columnDesc);
@@ -196,9 +215,11 @@ public class HBaseManagerMain {
      * @param admin
      * @throws IOException
      */
-    private void deleteTable (Admin admin) throws IOException {
-        TableName tableName = TableName.valueOf(TABLE_NAME);
-        LOG.info("disable and then delete table named " + TABLE_NAME);
+    public void deleteTable (String tablename) throws IOException {
+//        TableName tableName = TableName.valueOf(TABLE_NAME);
+    	TableName tableName = TableName.valueOf(tablename);
+ //   	LOG.info("disable and then delete table named " + tablename);
+    	System.out.println("disable and then delete table named " + tablename);
         admin.disableTable(tableName);
         admin.deleteTable(tableName);
     }
@@ -208,14 +229,16 @@ public class HBaseManagerMain {
      * @param connection
      * @throws IOException
      */
-    private void putDatas (Connection connection) throws IOException {
-        String [] rows = {"baidu.com_19991011_20151011", "alibaba.com_19990415_20220523"};
-        String [] columns = {"owner", "ipstr", "access_server", "reg_date", "exp_date"};
-        String [][] values = {
-            {"Beijing Baidu Technology Co.", "220.181.57.217", "北京", "1999年10月11日", "2015年10月11日"}, 
-            {"Hangzhou Alibaba Advertising Co.", "205.204.101.42", "杭州", "1999年04月15日", "2022年05月23日"}
-        };
-        TableName tableName = TableName.valueOf(TABLE_NAME);
+    public void putDatas (String tablename , String [] columns , String[] values ) throws IOException {
+//        String [] rows = {"baidu.com_19991011_20151011", "alibaba.com_19990415_20220523"};
+//        String [] columns = {"owner", "ipstr", "access_server", "reg_date", "exp_date"};
+//        String [][] values = {
+//            {"Beijing Baidu Technology Co.", "220.181.57.217", "北京", "1999年10月11日", "2015年10月11日"}, 
+//            {"Hangzhou Alibaba Advertising Co.", "205.204.101.42", "杭州", "1999年04月15日", "2022年05月23日"}
+//        };
+        String[] rows  = {"wordcount"};
+        
+        TableName tableName = TableName.valueOf(tablename);
         byte [] family = Bytes.toBytes(COLUMN_FAMILY_NAME);
         Table table = connection.getTable(tableName);
         for (int i = 0; i < rows.length; i++) {
@@ -224,7 +247,7 @@ public class HBaseManagerMain {
             Put put = new Put(rowkey);
             for (int j = 0; j < columns.length; j++) {
                 byte [] qualifier = Bytes.toBytes(columns[j]);
-                byte [] value = Bytes.toBytes(values[i][j]);
+                byte [] value = Bytes.toBytes(values[i]);
                 put.addColumn(family, qualifier, value);
             }
             table.put(put);
