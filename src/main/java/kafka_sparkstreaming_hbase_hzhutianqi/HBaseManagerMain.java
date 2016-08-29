@@ -49,110 +49,33 @@ public class HBaseManagerMain {
     Connection connection = null;
     Admin admin = null;
     /**
-     * @param args
+     * @param connection ,  admin 
      */
     public HBaseManagerMain(Connection connection , Admin admin){
     	this.connection = connection;
     	this.admin = admin;
     }
-    
-    
-    
-//    
-//    
-//    public static void main(String[] args) {
-//        Configuration config = HBaseConfiguration.create();
-//        config.set("hbase.zookeeper.quorum", "10.240.84.15");
-//        config.set("hbase.zookeeper.property.clientPort", "2182");
-//        Connection connection = null;
-//        Admin admin = null;
-//    
-//        HBaseManagerMain manageMain = new HBaseManagerMain();
-//
-//        try {
-//            /**
-//             * HTable类读写时是非线程安全的，已经标记为Deprecated
-//             * 建议通过org.apache.hadoop.hbase.client.Connection来获取实例
-//             */     	
-//            connection = ConnectionFactory.createConnection(config);
-//            admin = connection.getAdmin();
-//            
-//            /**
-//             *  列出所有的表
-//             */
-////            manageMain.listTables();
-////            /**
-////             * 判断表m_domain是否存在
-////             */
-////            boolean exists = manageMain.isExists();
-////             
-////            /**
-////             * 存在就删除
-////             */
-////            if (exists) {
-////               manageMain.deleteTable(admin);
-////            } 
-////             
-////            /**
-////             * 创建表
-////             */
-////            manageMain.createTable();
-//             
-////            /**
-////             *  再次列出所有的表
-////             */
-////            manageMain.listTables();
-////             
-////            /**
-////             * 添加数据
-////             */
-////            manageMain.putDatas(connection);
-////             
-//            /**
-//             * 检索数据-表扫描
-//             */
-//            manageMain.scanTable(connection);
-//             
-//            /**
-//             * 检索数据-单行读
-//             */
-//            manageMain.getData(connection);
-//             
-//            /**
-//             * 检索数据-根据条件
-//             */
-//            manageMain.queryByFilter(connection);
-//             
-//            /**
-//             * 删除数据
-//             */
-//            manageMain.deleteDatas(connection);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//         
-//    }
-// 
+ 
     /**
      * 列出表
-     * @param admin
-     * @throws IOException 
+     * @param 
+     * 
      */
     public void listTables () throws IOException {
         TableName [] names = admin.listTableNames();
         for (TableName tableName : names) {
- //           LOG.info("Table Name is : " + tableName.getNameAsString());
+            LOG.info("Table Name is : " + tableName.getNameAsString());
             System.out.println("Table Name is : " + tableName.getNameAsString());
         }
     }
      
     /**
      * 判断表是否存在
-     * @param admin
+     * @param tablename
      * @return
      * @throws IOException
      */
-    public boolean isExists (String tablename) throws IOException {
+    public boolean isExists (String tableName) throws IOException {
         /**
          * org.apache.hadoop.hbase.TableName为为代表了表名字的Immutable POJO class对象,
          * 形式为<table namespace>:<table qualifier>。
@@ -167,30 +90,29 @@ public class HBaseManagerMain {
          * 在HBase中，namespace命名空间指对一组表的逻辑分组，类似RDBMS中的database，方便对表在业务上划分。
          * 
         */ 
- //       TableName tableName = TableName.valueOf(TABLE_NAME);
-         
-    	TableName tableName = TableName.valueOf(tablename);
-        boolean exists = admin.tableExists(tableName);
+    	
+    	TableName tablename = TableName.valueOf(tableName);
+        boolean exists = admin.tableExists(tablename);
         if (exists) {
- //           LOG.info("Table " + tableName.getNameAsString() + " already exists.");
-            System.out.println("Table " + tableName.getNameAsString() + " already exists.");
+ //        LOG.info("Table " + tableName.getNameAsString() + " already exists.");
+            System.out.println("Table " + tablename.getNameAsString() + " already exists.");
         } else {
-//            LOG.info("Table " + tableName.getNameAsString() + " not exists.");
-            System.out.println("Table " + tableName.getNameAsString() + " not exists.");
+//         LOG.info("Table " + tableName.getNameAsString() + " not exists.");
+            System.out.println("Table " + tablename.getNameAsString() + " not exists.");
         }
         return exists;
     }
      
     /**
      * 创建表
-     * @param admin
+     * @param tableName
      * @throws IOException
      */
-    public  void createTable (String tablename) throws IOException {
-        TableName tableName = TableName.valueOf( tablename);
-        LOG.info("To create table named " +  tablename);
-        System.out.println("To create table named " +  tablename);
-        HTableDescriptor tableDesc = new HTableDescriptor(tableName);
+    public  void createTable (String tableName) throws IOException {
+        TableName tablename = TableName.valueOf( tableName);
+        LOG.info("To create table named " +  tableName);
+        System.out.println("To create table named " +  tableName);
+        HTableDescriptor tableDesc = new HTableDescriptor(tablename);
         HColumnDescriptor columnDesc = new HColumnDescriptor(COLUMN_FAMILY_NAME);
         tableDesc.addFamily(columnDesc);
          
@@ -208,20 +130,20 @@ public class HBaseManagerMain {
      
     /**
      * 删除表
-     * @param admin
+     * @param tableName
      * @throws IOException
      */
-    public void deleteTable (String tablename) throws IOException {
-    	TableName tableName = TableName.valueOf(tablename);
+    public void deleteTable (String tableName) throws IOException {
+    	TableName tablename = TableName.valueOf(tableName);
  //   	LOG.info("disable and then delete table named " + tablename);
-    	System.out.println("disable and then delete table named " + tablename);
-        admin.disableTable(tableName);
-        admin.deleteTable(tableName);
+    	System.out.println("disable and then delete table named " + tableName);
+        admin.disableTable(tablename);
+        admin.deleteTable(tablename);
     }
      
     /**
      * 添加数据
-     * @param connection
+     * @param  tableName , columnFamily , rowKeyCounterMap(contains rowKey , key , value)   
      * @throws IOException
      */
     public void putDatas (String tableName , String columnFamily , HashMap<String , CounterMap> rowKeyCounterMap ) throws IOException {
@@ -253,7 +175,7 @@ public class HBaseManagerMain {
      
     /**
      * 检索数据-单行获取
-     * @param connection
+     * @param tableName
      * @throws IOException 
      */
     public void getData(String tableName) throws IOException {
@@ -282,7 +204,7 @@ public class HBaseManagerMain {
      
     /**
      * 检索数据-表扫描
-     * @param connection
+     * @param tableName
      * @throws IOException 
      */
     public void scanTable(String tableName) throws IOException {

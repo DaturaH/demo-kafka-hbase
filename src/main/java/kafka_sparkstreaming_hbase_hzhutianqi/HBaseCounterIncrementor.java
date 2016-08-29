@@ -37,6 +37,15 @@ public class HBaseCounterIncrementor {
 	
 	static Object locker = new Object();
 	
+	/**
+	 * 
+	 *  @author hzhutianqi
+	 *  初始化配置
+	 *  init with configuration , connection , admin and hbaseManagerMain
+	 *  @param tableName , columnFamily
+     *  @throws IOException
+     *  
+	 */	
 	public HBaseCounterIncrementor(String tableName , String columnFamily){
 		HBaseCounterIncrementor.tableName = tableName;
 		HBaseCounterIncrementor.columnFamily = columnFamily;
@@ -77,6 +86,12 @@ public class HBaseCounterIncrementor {
 		}
 	}
 	
+	/**
+	 * 
+	 * 构造单例
+	 *  @param tableName , columnFamily
+	 *  
+	 */	
 	public static HBaseCounterIncrementor getInstance(String tableName , String columnFamily){
 		if(singleton == null){
 			synchronized(locker){
@@ -87,11 +102,15 @@ public class HBaseCounterIncrementor {
 		}
 		return singleton;
 	}
-		
-	private static void initialize(){
-
+	
+	/**
+	 * 
+	 * 写入HBase
+	 *  @IOException
+	 *  
+	 */	
+	private static void flushTOHBase(){
 			         try{		            
-				        
 				        hbaseManagerMain.putDatas(tableName, columnFamily, rowKeyCounterMap);
 				        //scan the table
 				        hbaseManagerMain.scanTable(tableName);
@@ -120,7 +139,7 @@ public class HBaseCounterIncrementor {
 			rowKeyCounterMap.put(rowKey , counterMap);
 		}
 		counterMap.increment(key , increment);
-		initialize();
+		flushTOHBase();
 	}
 	
 	private static void updateLastUsed(){
@@ -154,7 +173,7 @@ public class HBaseCounterIncrementor {
 //		private void flushToHBase() throws IOException{
 //			synchronized(connection){
 //				if(connection == null){
-//					initialize();
+//					flushTOHBase();
 //				}
 //				updateLastUsed();
 //				
